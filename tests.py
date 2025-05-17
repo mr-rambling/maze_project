@@ -28,7 +28,7 @@ class Tests(unittest.TestCase):
             False,
         )
 
-    def visit_reset(self):
+    def test_visit_reset(self):
         num_cols = 10
         num_rows = 10
         m1 = Maze(0, 0, num_rows, num_cols, 10, 10)
