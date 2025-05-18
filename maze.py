@@ -6,7 +6,7 @@ import random
 class Maze():
     def __init__(self, x1, y1, num_rows, num_cols,
                  cell_size_x, cell_size_y, win:Window=None,
-                 seed=None):
+                 seed=None, draw_time=0.01):
         self._x1 = x1
         self._y1 = y1
         self._num_rows = num_rows
@@ -17,6 +17,7 @@ class Maze():
         self._cells: list[list[Cell]] = []
         if seed:
             random.seed(seed)
+        self.__draw_time = draw_time
 
         self._create_cells()
         self._break_entrance_and_exit()
@@ -43,13 +44,19 @@ class Maze():
         if self._win is None:
             return
         self._cells[col][row].draw()
-        self._animate()
+        self._animate_maze()
 
-    def _animate(self):
+    def _animate_maze(self):
         if self._win is None:
             return
         self._win.redraw()
-        time.sleep(0.05)
+        time.sleep(self.__draw_time)
+
+    def _animate_solver(self, t):
+        if self._win is None:
+            return
+        self._win.redraw()
+        time.sleep(t)
 
     def _break_entrance_and_exit(self):
         self._cells[0][0].top_wall = False
@@ -109,16 +116,23 @@ class Maze():
             for row in range(self._num_rows):
                 self._cells[col][row].visited = False
 
-    def solve(self):
-        solved = self._solve_r(0,0)
+    def solve(self,t):
+        start = time.time()
+        solved = self._solve_r(0,0,t)
+        end = time.time()
         if solved:
             print('Maze solved!')
-            return True
+            return end - start
         print('Maze not solved :(')
-        return False
-    
-    def _solve_r(self,col,row):
-        self._animate()
+
+    def reset_moves(self):
+        for col in range(self._num_cols):
+            for row in range(self._num_rows):
+                self._cells[col][row].clear_moves()
+        self._reset_cells_visited()
+
+    def _solve_r(self,col,row,t):
+        self._animate_solver(t)
         self._cells[col][row].visited = True
         if col == self._num_cols-1 and row == self._num_rows-1: 
             return True
@@ -128,7 +142,7 @@ class Maze():
             and not self._cells[col-1][row].visited):
                 to_cell = self._cells[col-1][row]
                 self._cells[col][row].draw_move(to_cell)
-                if self._solve_r(col-1,row):
+                if self._solve_r(col-1,row,t):
                     return True
                 self._cells[col][row].draw_move(to_cell,undo=True)               
         # right
@@ -136,7 +150,7 @@ class Maze():
              and not self._cells[col+1][row].visited):
                 to_cell = self._cells[col+1][row]
                 self._cells[col][row].draw_move(to_cell)
-                if self._solve_r(col+1,row):
+                if self._solve_r(col+1,row,t):
                     return True
                 self._cells[col][row].draw_move(to_cell,undo=True)  
         # up
@@ -144,7 +158,7 @@ class Maze():
             and not self._cells[col][row-1].visited):
                 to_cell = self._cells[col][row-1]
                 self._cells[col][row].draw_move(to_cell)
-                if self._solve_r(col,row-1):
+                if self._solve_r(col,row-1,t):
                     return True
                 self._cells[col][row].draw_move(to_cell,undo=True)  
         # down
@@ -152,7 +166,7 @@ class Maze():
             and not self._cells[col][row+1].visited):
                 to_cell = self._cells[col][row+1]
                 self._cells[col][row].draw_move(to_cell)
-                if self._solve_r(col,row+1):
+                if self._solve_r(col,row+1,t):
                     return True
                 self._cells[col][row].draw_move(to_cell,undo=True)
 
